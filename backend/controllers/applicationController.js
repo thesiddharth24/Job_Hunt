@@ -3,9 +3,10 @@ import ErrorHandler from "../middlewares/error.js";
 import { Application } from "../models/applicationSchema.js";
 import { Job } from "../models/jobSchema.js";
 import cloudinary from "cloudinary";
+import { User } from "../models/user.js";
 
 export const postApplication = catchAsyncErrors(async (req, res, next) => {
-  const { role } = req.user;
+  const { _id , role , balance } = req.user;
   if (role === "Employer") {
     return next(
       new ErrorHandler("Employer not allowed to access this resource.", 400)
@@ -42,6 +43,7 @@ export const postApplication = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Job not found!", 404));
   }
   const jobDetails = await Job.findById(jobId);
+
   if (!jobDetails) {
     return next(new ErrorHandler("Job not found!", 404));
   }
@@ -62,24 +64,51 @@ export const postApplication = catchAsyncErrors(async (req, res, next) => {
   ) {
     return next(new ErrorHandler("Please fill all fields.", 400));
   }
-  const application = await Application.create({
-    name,
-    email,
-    coverLetter,
-    phone,
-    address,
-    applicantID,
-    employerID,
-    resume: {
-      public_id: cloudinaryResponse.public_id,
-      url: cloudinaryResponse.secure_url,
-    },
-  });
-  res.status(200).json({
-    success: true,
-    message: "Application Submitted!",
-    application,
-  });
+  //user or job update karo 
+  if(balance < jobDetails.requiredRupees){
+    res.status(200).json({
+      success: true,
+      message: "Applicant balance is low!!"
+    });
+  }else{
+    //ab banlance toh hai 
+    const updatedBalance = (balance - jobDetails.requiredRupees ) + (jobDetails.requiredRupees)/5;
+    await User.findByIdAndUpdate(_id,{balance:updatedBalance},{
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    })
+    //ab job ko employer ko half RR send kar do
+    const {balance} = await User.findById(employerID.user);
+    const employerBalance = (balance) + (jobDetails.requiredRupees)/2;
+    await User.findByIdAndUpdate(employerID.user,{balance:employerBalance},{
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    });
+
+    const application = await Application.create({
+      name,
+      email,
+      coverLetter,
+      phone,
+      address,
+      applicantID,
+      employerID,
+      resume: {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url,
+      },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Application Submitted!",
+      application,
+    });
+  }
+  
+
+
 });
 
 export const employerGetAllApplications = catchAsyncErrors(

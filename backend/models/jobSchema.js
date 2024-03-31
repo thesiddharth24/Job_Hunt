@@ -28,7 +28,6 @@ const jobSchema = new mongoose.Schema({
   location: {
     type: String,
     required: [true, "Please provide location."],
-    minLength: [20, "Location must contian at least 20 characters!"],
   },
   fixedSalary: {
     type: Number,
@@ -48,6 +47,13 @@ const jobSchema = new mongoose.Schema({
   expired: {
     type: Boolean,
     default: false,
+  },
+  requiredRupees: {
+    type: Number,
+    default: function() {
+      // Calculate required rupees based on role name and location lengths
+      return 2 * this.title.length + 5 * this.location.length;
+    }
   },
   jobPostedOn: {
     type: Date,

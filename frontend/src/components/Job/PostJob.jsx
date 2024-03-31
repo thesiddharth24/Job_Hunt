@@ -29,6 +29,7 @@ const PostJob = () => {
       setSalaryTo("");
       setFixedSalary("");
     }
+    console.log(title);
     await axios
       .post(
         "http://localhost:4000/api/v1/job/post",

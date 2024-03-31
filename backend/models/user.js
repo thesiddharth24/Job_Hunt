@@ -30,6 +30,24 @@ const userSchema = new mongoose.Schema({
     required: [true, "Please select a role"],
     enum: ["Job Seeker", "Employer"],
   },
+  otp:{
+    type: String,
+    select: false
+  },
+  otpTimestamp:{
+    type:Date,
+    select: false
+  },
+  emailVarified:{
+    type:Boolean,
+    default:false
+  },
+  balance:{
+    type:Number,
+    default:function() {
+       return this.role === "Employer"? 200:300;
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now,
